@@ -24,6 +24,8 @@
 
 #define UVC_DEVICE  "/dev/video0"
 
+#define CLEAR(x) memset (&(x), 0, sizeof (x))
+
 static void errno_exit (const char *s)
 {
 	fprintf (stderr, "%s error %d, %s\n",s, errno, strerror (errno));
@@ -235,6 +237,62 @@ struct buffer *v4l2_init_device (int * fd, char * dev_name, int width,
 }
 
 
+//read one frame from memory and throws the data to standard output
+int read_frame  (int * fd, int width, int height, int * n_buffers, 
+						struct buffer * buffers, int pixel_format)
+{
+	struct v4l2_buffer buf;//needed for memory mapping
+	unsigned int Bpf;//bytes per frame
+	static int cnt;
+	const int dstframe = 8;
+
+	CLEAR (buf);
+
+	buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	buf.memory = V4L2_MEMORY_MMAP;
+
+	if (-1 == xioctl (*fd, VIDIOC_DQBUF, &buf)) 
+	{
+		switch (errno) 
+		{
+			case EAGAIN:
+				return 0;
+
+			case EIO://EIO ignored
+
+			default:
+				errno_exit ("VIDIOC_DQBUF");
+		}
+	}
+			
+	//assert (buf.index < *n_buffers);
+
+	switch (pixel_format) 
+	{  
+		case 0: //YUV420
+			Bpf = width*height*12/8;           
+			break;
+		case 1: //RGB565
+			Bpf = width*height*2;
+			break;
+		case 2: //RGB32
+			Bpf = width*height*4;
+		break;
+		case 3: //YUYV
+			Bpf = width*height*2;
+		break;
+	}
+
+	int ret;
+	//writing to standard output
+	if (cnt++%dstframe==0)
+		ret = write(STDOUT_FILENO, buffers[buf.index].start, Bpf);
+	
+	if (-1 == xioctl (*fd, VIDIOC_QBUF, &buf))
+		errno_exit ("VIDIOC_QBUF");
+
+	return 1;
+}
 
 
 
