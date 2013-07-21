@@ -239,12 +239,12 @@ struct buffer *v4l2_init_device (int * fd, char * dev_name, int width,
 
 //read one frame from memory and throws the data to standard output
 int read_frame  (int * fd, int width, int height, int * n_buffers, 
-						struct buffer * buffers, int pixel_format)
+						struct buffer * buffers, int pixel_format, struct v4l2_buffer *frame)
 {
 	struct v4l2_buffer buf;//needed for memory mapping
-	unsigned int Bpf;//bytes per frame
-	static int cnt;
-	const int dstframe = 8;
+//	unsigned int Bpf;//bytes per frame
+//	static int cnt;
+//	const int dstframe = 8;
 
 	CLEAR (buf);
 
@@ -256,7 +256,7 @@ int read_frame  (int * fd, int width, int height, int * n_buffers,
 		switch (errno) 
 		{
 			case EAGAIN:
-				return 0;
+				return -1;
 
 			case EIO://EIO ignored
 
@@ -264,7 +264,13 @@ int read_frame  (int * fd, int width, int height, int * n_buffers,
 				errno_exit ("VIDIOC_DQBUF");
 		}
 	}
-			
+		
+
+	*frame = buf;
+
+	return 0;
+
+#if 0
 	//assert (buf.index < *n_buffers);
 
 	switch (pixel_format) 
@@ -292,8 +298,17 @@ int read_frame  (int * fd, int width, int height, int * n_buffers,
 		errno_exit ("VIDIOC_QBUF");
 
 	return 1;
+#endif
+
 }
 
+int release_frame(int * fd, struct v4l2_buffer *frame)
+{
+	if (-1 == xioctl (*fd, VIDIOC_QBUF, frame))
+		errno_exit ("VIDIOC_QBUF");
+
+	return 0;
+}
 
 
 

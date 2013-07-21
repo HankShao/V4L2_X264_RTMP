@@ -526,7 +526,7 @@ int main (int argc, char ** argv)
 				exit (EXIT_FAILURE);
 		}
 	}
-	
+
 	open_device (&fd, dev_name);
 	
 	//set the input if needed

@@ -7,7 +7,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include <assert.h>
+#include <asm/types.h>          /* for videodev2.h */
+#include <linux/videodev2.h>
+
 #include "v4l2.h"
 
 
@@ -28,9 +33,22 @@ int v4l2_dev_config(void)
 
 int main(int argv, char *argc[])
 {
+	struct v4l2_buffer frame;
+	
     v4l2_dev_config();	
 
-	while(1 != read_frame(&v4l2_fd, 640, 480,  &n_buffers, buffers, 3));
+	while(1)
+	{
+		if (0 != read_frame(&v4l2_fd, 640, 480,	&n_buffers, buffers, 3, &frame)){
+			usleep(40*1000);
+			continue;
+		}
+
+		write(STDOUT_FILENO, buffers[frame.index].start, 640*480*2);
+
+		release_frame(&v4l2_fd, &frame);
+		sleep(1);
+	}
 		
     return 0;
 }
