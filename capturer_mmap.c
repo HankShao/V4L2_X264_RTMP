@@ -95,7 +95,7 @@ static int read_frame  (int * fd, int width, int height, int * n_buffers,
 		case 2: //RGB32
 			Bpf = width*height*4;
 		break;
-		case 3:
+		case 3: //YUYV
 			Bpf = width*height*2;
 		break;
 	}
@@ -335,7 +335,7 @@ static struct buffer *init_device (int * fd, char * dev_name, int width,
 			fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_RGB32;
 			break;
 		case 3:
-			fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YVYU;
+			fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
 			break;
 	}
 	//fmt.fmt.pix.colorspace  = V4L2_COLORSPACE_SRGB;
