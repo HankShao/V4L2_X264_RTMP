@@ -461,6 +461,22 @@ static void enum_standards (int * fd )
 	}
 }
 
+//show the available pixel fmt
+static void enum_pixel_fmt(int *fd)
+{
+	struct v4l2_fmtdesc fmt = {0};
+	printf("Available pixelfmt:\n");
+        fmt.index = 0;
+	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	while(0 == ioctl(*fd, VIDIOC_ENUM_FMT, &fmt)){
+		fmt.index++;
+		printf("pixelfmt=\"%c%c%c%c\", description=\"%s\"\n",fmt.pixelformat& 0xFF, (fmt.pixelformat >> 8) & 0xFF,
+		(fmt.pixelformat>> 16) & 0xFF, (fmt.pixelformat >> 24) & 0xFF,  fmt.description);
+	}
+
+	return;
+}
+
 //configure the video input
 static void set_input(int * fd, int dev_input)
 {
@@ -556,6 +572,8 @@ int main (int argc, char ** argv)
 				printf("\n");
 				enum_standards(&fd);
 				printf("\n");
+				enum_pixel_fmt(&fd);
+				printf("\n");
 				close_device (&fd);
 				exit (EXIT_SUCCESS);
 				//break;
@@ -603,7 +621,7 @@ int main (int argc, char ** argv)
 				exit (EXIT_FAILURE);
 		}
 	}
-
+        //1.打开视频设备
 	open_device (&fd, dev_name);
 	
 	//set the input if needed
