@@ -62,6 +62,8 @@ static int read_frame  (int * fd, int width, int height, int * n_buffers,
 	struct v4l2_buffer buf;//needed for memory mapping
 	unsigned int i;
 	unsigned int Bpf;//bytes per frame
+	static int cnt;
+	const int dstframe = 8;
 
 	CLEAR (buf);
 
@@ -102,7 +104,9 @@ static int read_frame  (int * fd, int width, int height, int * n_buffers,
 
 	int ret;
 	//writing to standard output
-	ret = write(STDOUT_FILENO, buffers[buf.index].start, Bpf);
+	if (cnt++%dstframe==0)
+		ret = write(STDOUT_FILENO, buffers[buf.index].start, Bpf);
+	
 	if (-1 == xioctl (*fd, VIDIOC_QBUF, &buf))
 		errno_exit ("VIDIOC_QBUF");
 
