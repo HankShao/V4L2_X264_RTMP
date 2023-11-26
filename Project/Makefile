@@ -12,7 +12,7 @@ CFLAGS += -Wall
 
 CFLAGS += -I$(PROJECT)/include
 CFLAGS += -L$(PROJECT)/lib
-CFLAGS += -lpthread
+CFLAGS += -lpthread -lm
 
 
 TARGET = sample
@@ -20,7 +20,7 @@ TARGET = sample
 all:$(OBJ)
 #	@echo $(OBJ_C)
 #	#@echo $(OBJ)
-	gcc $^ -o $(TARGET)
+	gcc $^ -o $(TARGET) $(CFLAGS)
 
 %.o:%.c
 	gcc $(CFLAGS) -c $^ -o $@

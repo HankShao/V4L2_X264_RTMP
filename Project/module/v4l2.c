@@ -256,6 +256,7 @@ int read_frame  (int * fd, int width, int height, int * n_buffers,
 		switch (errno) 
 		{
 			case EAGAIN:
+                printf("xioctl error EAGAIN!\n");
 				return -1;
 
 			case EIO://EIO ignored
