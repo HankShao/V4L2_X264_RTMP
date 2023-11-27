@@ -12,11 +12,14 @@
 #include <assert.h>
 #include <asm/types.h>          /* for videodev2.h */
 #include <linux/videodev2.h>
-
+#include <pthread.h>
 #include "v4l2.h"
 #include "encoder.h"
+#include "rtsp.h"
 
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 int v4l2_fd = -1;
 int n_buffers = 0;
 struct  buffer *buffers = NULL;
@@ -45,15 +48,11 @@ void dump_yuyv(char *pdata, int w, int h)
 	return;
 }
 
-
-int main(int argv, char *argc[])
+void *task_uvc_capture_encode(void *param)
 {
 	struct v4l2_buffer frame;
-	
-
-    v4l2_dev_config();	
-
-	while(1)
+	volatile int *pExit = (int *)param;
+	while(*pExit == 0)
 	{
 		if (0 != read_frame(&v4l2_fd, 640, 480,	&n_buffers, buffers, 3, &frame)){
 			usleep(40*1000);
@@ -78,7 +77,38 @@ int main(int argv, char *argc[])
 		release_frame(&v4l2_fd, &frame);
 		usleep(40000);
 	}
-		
-    return 0;
+
+	*pExit = 0;
+	return NULL;
 }
 
+void *task_rtsp(void *param)
+{
+    rtsp_task_run(param);
+	return NULL;
+}
+int main(int argv, char *argc[])
+{
+	pthread_t tid1,tid2;
+	volatile int exit1 = 0;
+	volatile int exit2 = 0;
+
+    v4l2_dev_config();	
+	pthread_create(&tid1, NULL, task_uvc_capture_encode, (void *)&exit1);
+	pthread_create(&tid2, NULL, task_rtsp, (void *)&exit2);
+	
+	while(getchar() == 'q')
+		printf("please input 'q' exit!\n");
+
+	exit1 = 1;
+	exit2 = 1;
+
+	while(exit1 || exit2)
+		usleep(100);
+
+	printf("demo successfully exited!\n");
+    return 0;
+}
+#ifdef __cplusplus
+}
+#endif

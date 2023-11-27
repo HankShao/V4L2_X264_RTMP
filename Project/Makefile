@@ -15,6 +15,8 @@ CFLAGS += -Wall
 
 CFLAGS += -I$(PROJECT)/include
 CFLAGS += -L$(PROJECT)/lib
+CFLAGS += -I$(PROJECT)/include/rtsp -I$(PROJECT)/include/rtsp/liveMedia -I$(PROJECT)/include/rtsp/groupsock -I$(PROJECT)/include/rtsp/BasicUsageEnvironment -I$(PROJECT)/include/rtsp/UsageEnvironment
+CFLAGS += -Wl,--start-group -lBasicUsageEnvironment -lgroupsock -lliveMedia -lUsageEnvironment -lssl -lcrypto -Wl,--end-group
 CFLAGS += -lpthread -lm
 CFLAGS += -lx264 -ldl
 

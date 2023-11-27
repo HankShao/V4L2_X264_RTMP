@@ -1,8 +1,9 @@
 #include <liveMedia.hh>
 
 #include <BasicUsageEnvironment.hh>
-#include "announceURL.hh"
+//#include "announceURL.hh"
 #include <GroupsockHelper.hh>
+#include "rtsp.h"
 
 UsageEnvironment* env;
 char const* inputFileName = "test.264";
@@ -11,7 +12,28 @@ RTPSink* videoSink;
 
 void play(); // forward
 
-int rtsp_task(int argc, char** argv) {
+void announceURL(RTSPServer* rtspServer, ServerMediaSession* sms) {
+  if (rtspServer == NULL || sms == NULL) return; // sanity check
+
+  UsageEnvironment& env = rtspServer->envir();
+
+  env << "Play this stream using the URL ";
+  if (weHaveAnIPv4Address(env)) {
+    char* url = rtspServer->ipv4rtspURL(sms);
+    env << "\"" << url << "\"";
+    delete[] url;
+    if (weHaveAnIPv6Address(env)) env << " or ";
+  }
+  if (weHaveAnIPv6Address(env)) {
+    char* url = rtspServer->ipv6rtspURL(sms);
+    env << "\"" << url << "\"";
+    delete[] url;
+  }
+  env << "\n";
+}
+
+int rtsp_task(void *param) 
+{
   // Begin by setting up our usage environment:
   TaskScheduler* scheduler = BasicTaskScheduler::createNew();
   env = BasicUsageEnvironment::createNew(*scheduler);
@@ -70,6 +92,17 @@ int rtsp_task(int argc, char** argv) {
   *env << "Beginning streaming...\n";
   play();
 
+	int *pExit = (int *)param;
+  while(1)
+  {
+      if (*pExit == 1)
+      {
+          *pExit = 0;
+          return 0;
+      }
+      usleep(100000);
+  }
+
   env->taskScheduler().doEventLoop(); // does not return
 
   return 0; // only to prevent compiler warning
@@ -103,4 +136,10 @@ void play() {
   // Finally, start playing:
   *env << "Beginning to read from file...\n";
   videoSink->startPlaying(*videoSource, afterPlaying, videoSink);
+}
+
+void *rtsp_task_run(void *param)
+{
+    rtsp_task(param);
+    return NULL;
 }
