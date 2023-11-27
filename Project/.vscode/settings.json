@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "jpegenc.h": "c"
+        "jpegenc.h": "c",
+        "x264.h": "c",
+        "encoder.h": "c"
     }
 }

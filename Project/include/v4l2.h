@@ -1,6 +1,10 @@
 #ifndef __V4L2_H__
 #define __V4L2_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct buffer {    
 	void *                  start;
 	size_t                  length;
@@ -14,5 +18,9 @@ int read_frame  (int * fd, int width, int height, int * n_buffers,
 						struct buffer * buffers, int pixel_format, struct v4l2_buffer *frame);
 int release_frame(int * fd, struct v4l2_buffer *frame);
 
+
+#ifdef __cplusplus
+}
+#endif
 #endif
 

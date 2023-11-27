@@ -4,6 +4,9 @@
 #include <string.h>
 #include <math.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 const unsigned char Lum_Quantization_Tab[64]=
 {
     16, 11, 10, 16, 24, 40, 51, 61,
@@ -678,3 +681,6 @@ int encode_yuv444Tojpg(char *pYuv, int width, int height, int Qp, char *pJpgFile
 
     return 0;
 }
+#ifdef __cplusplus
+}
+#endif

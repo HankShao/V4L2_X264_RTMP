@@ -14,7 +14,8 @@
 #include <linux/videodev2.h>
 
 #include "v4l2.h"
-#include "jpegenc.h"
+#include "encoder.h"
+
 
 int v4l2_fd = -1;
 int n_buffers = 0;
@@ -31,7 +32,7 @@ int v4l2_dev_config(void)
     return 0;
 }
 
-void dump_yuv_422(char *pdata, int w, int h)
+void dump_yuyv(char *pdata, int w, int h)
 {
 	char PATH[20];
 	FILE *fp;
@@ -44,10 +45,11 @@ void dump_yuv_422(char *pdata, int w, int h)
 	return;
 }
 
+
 int main(int argv, char *argc[])
 {
 	struct v4l2_buffer frame;
-	int cnt = 0;
+	
 
     v4l2_dev_config();	
 
@@ -57,15 +59,24 @@ int main(int argv, char *argc[])
 			usleep(40*1000);
 			continue;
 		}
-
-		//write(STDOUT_FILENO, buffers[frame.index].start, 640*480*2);
-		//dump_yuv_422(buffers[frame.index].start, 640, 480);
 		
+		//dump_yuyv(buffers[frame.index].start, 640, 480);
+#ifdef JPEGENC	
 		char PATH[10];
+		static int cnt = 0;
 		sprintf(PATH, "./%d.jpg", cnt++);
-		encode_yuyvjpg(buffers[frame.index].start, 640, 480, 80, PATH);
+		Enc_yuyv2jpg(buffers[frame.index].start, 640, 480, 80, PATH);
+#endif
+		static int pts;
+		enc_h264_out out;
+		pts += 40;
+		Enc_yuvToh264(buffers[frame.index].start, 640, 480, 40, pts, &out);
+		static FILE *fp;
+		if (!fp) fp = fopen("./1.264", "a");
+		fwrite(out.packetdata[0], 1, out.packetlen[0], fp);
+
 		release_frame(&v4l2_fd, &frame);
-		sleep(1);
+		usleep(40000);
 	}
 		
     return 0;
