@@ -92,6 +92,7 @@ int rtsp_task(void *param)
   *env << "Beginning streaming...\n";
   play();
 
+#if 0
 	int *pExit = (int *)param;
   while(1)
   {
@@ -102,7 +103,7 @@ int rtsp_task(void *param)
       }
       usleep(100000);
   }
-
+#endif
   env->taskScheduler().doEventLoop(); // does not return
 
   return 0; // only to prevent compiler warning
