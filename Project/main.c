@@ -52,6 +52,9 @@ void *task_uvc_capture_encode(void *param)
 {
 	struct v4l2_buffer frame;
 	volatile int *pExit = (int *)param;
+	void *handle;
+
+	handle = Enc_OpenX264(640, 480, 25);
 	while(*pExit == 0)
 	{
 		if (0 != read_frame(&v4l2_fd, 640, 480,	&n_buffers, buffers, 3, &frame)){
@@ -66,17 +69,18 @@ void *task_uvc_capture_encode(void *param)
 		sprintf(PATH, "./%d.jpg", cnt++);
 		Enc_yuyv2jpg(buffers[frame.index].start, 640, 480, 80, PATH);
 #endif
-		static int pts;
 		enc_h264_out out;
-		pts += 40;
-		Enc_yuvToh264(buffers[frame.index].start, 640, 480, 40, pts, &out);
+		Enc_yuvToh264(buffers[frame.index].start, 640, 480, -1, 0, &out);
 		static FILE *fp;
-		if (!fp) fp = fopen("./1.264", "a");
+		if (!fp) 
+			fp = fopen("./1.264", "a");
 		fwrite(out.packetdata[0], 1, out.packetlen[0], fp);
 
 		release_frame(&v4l2_fd, &frame);
 		usleep(40000);
 	}
+
+	Enc_CloseX264(handle);
 
 	*pExit = 0;
 	return NULL;
@@ -95,16 +99,15 @@ int main(int argv, char *argc[])
 
     v4l2_dev_config();	
 	pthread_create(&tid1, NULL, task_uvc_capture_encode, (void *)&exit1);
-	pthread_create(&tid2, NULL, task_rtsp, (void *)&exit2);
+	//pthread_create(&tid2, NULL, task_rtsp, (void *)&exit2);
 	
-	while(getchar() == 'q')
+	while(getchar() != 'q')
 		printf("please input 'q' exit!\n");
 
 	exit1 = 1;
 	exit2 = 1;
 
-	while(exit1 || exit2)
-		usleep(100);
+	sleep(2); //wait phtread exit
 
 	printf("demo successfully exited!\n");
     return 0;
