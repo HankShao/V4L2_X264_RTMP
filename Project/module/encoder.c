@@ -101,6 +101,7 @@ int Enc_yuvToh264(char *pdata, int width, int height, int pts, int eof, enc_h264
     {
         out->packetdata[out->framenum] = (char *)nal->p_payload;
         out->packetlen[out->framenum]  = i_frame_size;
+        out->key = pic_out.b_keyframe;
         out->framenum++;
     }
 
@@ -109,13 +110,14 @@ int Enc_yuvToh264(char *pdata, int width, int height, int pts, int eof, enc_h264
         /* Flush delayed frames */
         while( x264_encoder_delayed_frames( handle ) )
         {
-            i_frame_size = x264_encoder_encode( handle, &nal, &i_nal, NULL, &pic_out );
+            i_frame_size = x264_encoder_encode( handle, &nal, &i_nal, NULL, &pic_out);
             if( i_frame_size < 0 )
                return -1;
             else if( i_frame_size )
             {
                 out->packetdata[out->framenum] = (char *)nal->p_payload;
                 out->packetlen[out->framenum]  = i_frame_size;
+                out->key = pic_out.b_keyframe;
                 out->framenum++;
             }
         }

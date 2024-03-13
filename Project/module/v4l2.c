@@ -238,7 +238,7 @@ struct buffer *v4l2_init_device (int * fd, char * dev_name, int width,
 
 
 //read one frame from memory and throws the data to standard output
-int read_frame  (int * fd, int width, int height, int * n_buffers, 
+int v4l2_read_frame(int * fd, int width, int height, int * n_buffers, 
 						struct buffer * buffers, int pixel_format, struct v4l2_buffer *frame)
 {
 	struct v4l2_buffer buf;//needed for memory mapping
@@ -251,19 +251,24 @@ int read_frame  (int * fd, int width, int height, int * n_buffers,
 	buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	buf.memory = V4L2_MEMORY_MMAP;
 
-	if (-1 == xioctl (*fd, VIDIOC_DQBUF, &buf)) 
+	while (1) 
 	{
-		switch (errno) 
-		{
-			case EAGAIN:
-                printf("xioctl error EAGAIN!\n");
-				return -1;
-
-			case EIO://EIO ignored
-
-			default:
-				errno_exit ("VIDIOC_DQBUF");
-		}
+        if (-1 == xioctl (*fd, VIDIOC_DQBUF, &buf))
+        {
+            switch (errno) 
+            {
+                case EAGAIN:
+                    //printf("xioctl error EAGAIN!\n");
+                    usleep(40000);
+                    break;
+                case EIO://EIO ignored
+                default:
+                    errno_exit ("VIDIOC_DQBUF");
+                    return -1;
+            }
+        }
+        else
+            break;
 	}
 		
 
@@ -303,7 +308,7 @@ int read_frame  (int * fd, int width, int height, int * n_buffers,
 
 }
 
-int release_frame(int * fd, struct v4l2_buffer *frame)
+int v4l2_release_frame(int * fd, struct v4l2_buffer *frame)
 {
 	if (-1 == xioctl (*fd, VIDIOC_QBUF, frame))
 		errno_exit ("VIDIOC_QBUF");

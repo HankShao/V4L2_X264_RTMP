@@ -9,6 +9,7 @@ typedef struct {
     int framenum;
     char *packetdata[8];
     int packetlen[8];
+    int key;
 }enc_h264_out;
 
 /*

@@ -3,7 +3,9 @@
 #include <BasicUsageEnvironment.hh>
 //#include "announceURL.hh"
 #include <GroupsockHelper.hh>
-#include "rtsp.h"
+#include "rtsp.hpp"
+
+using namespace std;
 
 UsageEnvironment* env;
 char const* inputFileName = "test.264";
@@ -143,4 +145,34 @@ void *rtsp_task_run(void *param)
 {
     rtsp_task(param);
     return NULL;
+}
+
+rtsp_server::rtsp_server():m_dqlimit(10)
+{
+  m_framedq.resize(m_dqlimit);
+}
+
+rtsp_server::~rtsp_server()
+{
+  m_framedq.clear();
+}
+
+int rtsp_server::rtsp_server_start()
+{
+    while(1)
+    {
+        usleep(40000);
+        if(m_framedq.empty())
+            continue;
+        shared_ptr<nalu_data> nalu = m_framedq.back();
+        m_framedq.pop_back();
+    }
+
+    return 0;
+}
+
+int rtsp_server::rtsp_server_stop()
+{
+    
+    return 0;
 }

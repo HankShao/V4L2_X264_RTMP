@@ -4,7 +4,8 @@
  * time：2021年11月8日22:01:41
  */
 
-
+#include <iostream>
+#include <memory>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -15,14 +16,21 @@
 #include <pthread.h>
 #include "v4l2.h"
 #include "encoder.h"
-#include "rtsp.h"
+#include "rtsp.hpp"
+
+using namespace std;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#ifdef __cplusplus
+}
+#endif
 int v4l2_fd = -1;
 int n_buffers = 0;
 struct  buffer *buffers = NULL;
+rtsp_server *rtsp = nullptr;
 
 int v4l2_dev_config(void)
 {
@@ -48,17 +56,28 @@ void dump_yuyv(char *pdata, int w, int h)
 	return;
 }
 
+void dump_enc(char *pdata, int len)
+{
+	static FILE *fp;
+	if (!fp) 
+		fp = fopen("./1.264", "a");
+	fwrite(pdata, 1, len, fp);
+}
+
 void *task_uvc_capture_encode(void *param)
 {
 	struct v4l2_buffer frame;
 	volatile int *pExit = (int *)param;
 	void *handle;
 
+	while (rtsp == nullptr) //等待rtsp启动
+		usleep(100000);
+
 	handle = Enc_OpenX264(640, 480, 25);
 	while(*pExit == 0)
 	{
-		if (0 != read_frame(&v4l2_fd, 640, 480,	&n_buffers, buffers, 3, &frame)){
-			usleep(40*1000);
+		usleep(40000);
+		if (0 != v4l2_read_frame(&v4l2_fd, 640, 480, &n_buffers, buffers, 3, &frame)){
 			continue;
 		}
 		
@@ -70,14 +89,24 @@ void *task_uvc_capture_encode(void *param)
 		Enc_yuyv2jpg(buffers[frame.index].start, 640, 480, 80, PATH);
 #endif
 		enc_h264_out out;
-		Enc_yuvToh264(buffers[frame.index].start, 640, 480, -1, 0, &out);
-		static FILE *fp;
-		if (!fp) 
-			fp = fopen("./1.264", "a");
-		fwrite(out.packetdata[0], 1, out.packetlen[0], fp);
+		Enc_yuvToh264(static_cast<char *>(buffers[frame.index].start), 640, 480, -1, 0, &out);
+		
+		for (auto i=0; i < out.framenum; i++)
+		{
 
-		release_frame(&v4l2_fd, &frame);
-		usleep(40000);
+			if(rtsp->m_framedq.size() < rtsp->m_dqlimit)
+			{
+				shared_ptr<nalu_data> nalu(new nalu_data, [](nalu_data *p){printf("del %p\n", p); delete p;});
+				cout << "add:" << nalu << endl;
+				nalu->key = out.key;
+				nalu->pdata = out.packetdata[i];
+				nalu->len = out.packetlen[i];
+				rtsp->m_framedq.push_back(nalu);
+			}
+			else
+				cout << "Deque is full limit:" << rtsp->m_dqlimit << endl;
+		}
+		v4l2_release_frame(&v4l2_fd, &frame);	
 	}
 
 	Enc_CloseX264(handle);
@@ -88,7 +117,9 @@ void *task_uvc_capture_encode(void *param)
 
 void *task_rtsp(void *param)
 {
-    rtsp_task_run(param);
+	rtsp = new rtsp_server;
+	rtsp->rtsp_server_start();
+
 	return NULL;
 }
 int main(int argv, char *argc[])
@@ -99,7 +130,7 @@ int main(int argv, char *argc[])
 
     v4l2_dev_config();	
 	pthread_create(&tid1, NULL, task_uvc_capture_encode, (void *)&exit1);
-	//pthread_create(&tid2, NULL, task_rtsp, (void *)&exit2);
+	pthread_create(&tid2, NULL, task_rtsp, (void *)&exit2);
 	
 	while(getchar() != 'q')
 		printf("please input 'q' exit!\n");
@@ -107,11 +138,11 @@ int main(int argv, char *argc[])
 	exit1 = 1;
 	exit2 = 1;
 
-	sleep(2); //wait phtread exit
+	pthread_join(tid1, NULL); //wait phtread exit
+	pthread_join(tid2, NULL); //wait phtread exit
+    delete rtsp;
 
 	printf("demo successfully exited!\n");
     return 0;
 }
-#ifdef __cplusplus
-}
-#endif
+

@@ -2,6 +2,7 @@
     "files.associations": {
         "jpegenc.h": "c",
         "x264.h": "c",
-        "encoder.h": "c"
+        "encoder.h": "c",
+        "rtsp.h": "c"
     }
 }
