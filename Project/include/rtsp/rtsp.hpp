@@ -15,7 +15,7 @@ class rtsp_server{
     public:
         rtsp_server();
         ~rtsp_server();
-        int rtsp_server_start();
+        int rtsp_server_start(void *param);
         int rtsp_server_stop();
         int rtsp_put_frame();
 

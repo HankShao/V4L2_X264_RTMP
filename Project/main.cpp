@@ -118,7 +118,7 @@ void *task_uvc_capture_encode(void *param)
 void *task_rtsp(void *param)
 {
 	rtsp = new rtsp_server;
-	rtsp->rtsp_server_start();
+	rtsp->rtsp_server_start(param);
 
 	return NULL;
 }

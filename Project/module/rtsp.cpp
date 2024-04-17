@@ -94,18 +94,6 @@ int rtsp_task(void *param)
   *env << "Beginning streaming...\n";
   play();
 
-#if 0
-	int *pExit = (int *)param;
-  while(1)
-  {
-      if (*pExit == 1)
-      {
-          *pExit = 0;
-          return 0;
-      }
-      usleep(100000);
-  }
-#endif
   env->taskScheduler().doEventLoop(); // does not return
 
   return 0; // only to prevent compiler warning
@@ -157,9 +145,10 @@ rtsp_server::~rtsp_server()
   m_framedq.clear();
 }
 
-int rtsp_server::rtsp_server_start()
+int rtsp_server::rtsp_server_start(void *param)
 {
-    while(1)
+    int *pexit = static_cast<int*>(param);
+    while(*pexit == 0)
     {
         usleep(40000);
         if(m_framedq.empty())
